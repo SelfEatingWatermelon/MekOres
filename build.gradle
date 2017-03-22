@@ -1,0 +1,89 @@
+buildscript {
+    repositories {
+        jcenter()
+        maven {
+            name = "forge"
+            url = "http://files.minecraftforge.net/maven"
+        }
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.2-SNAPSHOT'
+    }
+}
+
+plugins {
+    id 'org.ajoberstar.grgit' version '1.5.1'
+}
+
+apply plugin: 'net.minecraftforge.gradle.forge'
+
+import org.ajoberstar.grgit.Grgit
+
+ext.repo = Grgit.open()
+
+group = "${package_group}"
+archivesBaseName = "${mod_name}"
+version = "${mc_version}-${mod_version}"
+if (project.hasProperty('mod_appendix')) {
+    if (project.mod_appendix != "release") {
+        version += "-${repo.branch.getCurrent().name}-${repo.head().abbreviatedId}"
+    }
+    version += "-${project.mod_appendix}"
+}
+
+srcCompat = JavaVersion.VERSION_1_8
+targetCompat = JavaVersion.VERSION_1_8
+
+minecraft {
+    version = "${mc_version}-${forge_version}"
+    runDir = "run"
+
+    if (project.hasProperty('mappings_version')) {
+        mappings = project.mappings_version
+	}
+
+    replace "@VERSION@", project.version
+    replaceIn "MekOres.java"
+}
+
+repositories {
+    maven { url = "http://dvs1.progwml6.com/files/maven" }
+    maven { url = "http://mobiusstrip.eu/maven" }
+}
+
+dependencies {
+    deobfCompile "mezz.jei:jei_${mc_version}:${jei_version}"
+}
+
+processResources
+{
+    inputs.property "version", project.version
+    inputs.property "mcversion", project.minecraft.version
+
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+        expand 'version':project.version, 'mcversion':project.minecraft.version
+    }
+        
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.compilerArgs.add('-Xlint:unchecked')
+}
+
+tasks.withType(Javadoc) {
+    options.encoding = 'UTF-8'
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    from javadoc.destinationDir
+    classifier = 'javadoc'
+}
+
+artifacts {
+    archives javadocJar
+}

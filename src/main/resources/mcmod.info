@@ -1,0 +1,16 @@
+[
+{
+  "modid": "mekores",
+  "name": "MekOres",
+  "description": "Process all your ores through Mekanism machines",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["bmwalter68"],
+  "credits": "Aidan Brady and the Mekanism team",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
