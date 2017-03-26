@@ -1,6 +1,8 @@
 package com.selfeatingwatermelon.mekores;
 
 import com.selfeatingwatermelon.mekores.config.Config;
+import com.selfeatingwatermelon.mekores.ore.Ore;
+import com.selfeatingwatermelon.mekores.ore.OreManager;
 import com.selfeatingwatermelon.mekores.proxy.CommonProxy;
 import com.selfeatingwatermelon.mekores.remap.Remapper;
 
@@ -15,7 +17,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 
 import java.util.UUID;
 
-@Mod(modid = MekOres.MODID, name = MekOres.NAME, version = MekOres.VERSION, dependencies = MekOres.DEPENDENCIES, guiFactory = MekOres.GUIFACTORY, acceptedMinecraftVersions = MekOres.MCVERSIONS)
+@Mod(modid = MekOres.MODID, name = MekOres.NAME, version = MekOres.VERSION, dependencies = MekOres.DEPENDENCIES, acceptedMinecraftVersions = MekOres.MCVERSIONS)
 public class MekOres {
 	public static final String MODID = "mekores";
 	public static final String NAME = "MekOres";
@@ -31,8 +33,6 @@ public class MekOres {
 
 	@Instance(MODID)
 	public static MekOres instance;
-	
-	public Config config;
 
 	static {
 		FluidRegistry.enableUniversalBucket();
@@ -40,34 +40,26 @@ public class MekOres {
 
 	@EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
-		Logger.setLogger(event.getModLog());
-		
-		config = new Config(event.getSuggestedConfigurationFile());
-		
-		// Register Blocks/Tiles/Items/Fluids
-
-		proxy.handleEvent(event);
+		proxy.preInit(event);
 	}
 
 	@EventHandler
 	public void init(FMLInitializationEvent event) {
-		// Register/modify recipes
-
-		proxy.handleEvent(event);
+		proxy.init(event);
 	}
 
 	@EventHandler
 	public void postInit(FMLPostInitializationEvent event) {
-		proxy.handleEvent(event);
+		proxy.postInit(event);
 	}
 
 	@EventHandler
-	public void serverStarting(FMLServerStartingEvent event) {
-		// Register commands
+	public void serverStart(FMLServerStartingEvent event) {
+		proxy.serverStart(event);
 	}
 
 	@EventHandler
 	public void missingMappings(FMLMissingMappingsEvent event) {
-		Remapper.remap(event.get());
+		proxy.missingMappings(event);
 	}
 }

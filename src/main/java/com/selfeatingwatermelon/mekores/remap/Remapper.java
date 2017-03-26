@@ -1,6 +1,6 @@
 package com.selfeatingwatermelon.mekores.remap;
 
-import com.selfeatingwatermelon.mekores.Logger;
+import com.selfeatingwatermelon.mekores.Log;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import net.minecraft.block.Block;
@@ -19,7 +19,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 public final class Remapper {
-	private static final Marker MARKER = MarkerManager.getMarker("Remapper", Logger.MOD_MARKER);
+	private static final Marker MARKER = MarkerManager.getMarker("Remapper", Log.MOD_MARKER);
 
 	/**
 	 * A list of remapping functions that return {@code true} if they took an action for the {@link MissingMapping}.
@@ -42,7 +42,7 @@ public final class Remapper {
 	 */
 	public static void remap(List<MissingMapping> missingMappings) {
 		for (MissingMapping missingMapping : missingMappings) { // For each missing mapping,
-			Logger.info(MARKER, "Trying to remap %s", missingMapping.resourceLocation);
+			Log.info(MARKER, "Trying to remap %s", missingMapping.resourceLocation);
 
 			for (Predicate<MissingMapping> remappingFunction : remappingFunctions) { // For each remapping function
 				if (remappingFunction.test(missingMapping)) { // If the function took an action,
@@ -51,7 +51,7 @@ public final class Remapper {
 			}
 
 			if (missingMapping.getAction() == FMLMissingMappingsEvent.Action.DEFAULT) {
-				Logger.info(MARKER, "Couldn't remap %s", missingMapping.resourceLocation);
+				Log.info(MARKER, "Couldn't remap %s", missingMapping.resourceLocation);
 			}
 		}
 	}
@@ -69,7 +69,7 @@ public final class Remapper {
 				final IForgeRegistry<Block> blockRegistry = ForgeRegistries.BLOCKS;
 
 				if (blockRegistry.containsKey(registryName)) {
-					Logger.info(MARKER, "Remapped block %s to %s", missingMapping.resourceLocation, registryName);
+					Log.info(MARKER, "Remapped block %s to %s", missingMapping.resourceLocation, registryName);
 					missingMapping.remap(blockRegistry.getValue(registryName));
 					return true;
 				}
@@ -79,7 +79,7 @@ public final class Remapper {
 				final IForgeRegistry<Item> itemRegistry = ForgeRegistries.ITEMS;
 
 				if (itemRegistry.containsKey(registryName)) {
-					Logger.info(MARKER, "Remapped item %s to %s", missingMapping.resourceLocation, registryName);
+					Log.info(MARKER, "Remapped item %s to %s", missingMapping.resourceLocation, registryName);
 					missingMapping.remap(itemRegistry.getValue(registryName));
 					return true;
 				}

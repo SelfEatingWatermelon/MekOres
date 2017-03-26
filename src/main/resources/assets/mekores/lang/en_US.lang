@@ -1,0 +1,17 @@
+# Items
+item.nuggetGeneric.name=%s Nugget
+item.dustGeneric.name=%s Dust
+item.dustDirtyGeneric.name=Dirty %s Dust
+item.clumpGeneric.name=%s Clump
+item.shardGeneric.name=%s Shard
+item.crystalGeneric.name=%s Crystal
+
+# Fluids
+fluid.moltenGeneric.name=Molten %s
+
+# Gases
+gas.slurryGeneric.name=%s Slurry
+gas.cleanSlurryGeneric.name=Clean %s Slurry
+
+# Creative Tab
+itemGroup.mekores=Mek Ores
