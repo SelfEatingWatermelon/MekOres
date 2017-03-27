@@ -26,9 +26,8 @@ archivesBaseName = "${mod_name}"
 version = "${mc_version}-${mod_version}"
 if (project.hasProperty('mod_appendix')) {
     if (project.mod_appendix != "release") {
-        version += "-${repo.branch.getCurrent().name}-${repo.head().abbreviatedId}"
+        version += "-${repo.branch.getCurrent().name}-${repo.head().abbreviatedId}-${project.mod_appendix}"
     }
-    version += "-${project.mod_appendix}"
 }
 
 srcCompat = JavaVersion.VERSION_1_8
