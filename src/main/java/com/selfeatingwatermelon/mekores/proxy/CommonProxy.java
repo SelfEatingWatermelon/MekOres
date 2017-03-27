@@ -34,11 +34,11 @@ public class CommonProxy {
 		
 		// Register recipes
 		OreManager.registerVanillaRecipes();
+		OreManager.registerMekanismRecipes();
 	}
 
 	public void postInit(FMLPostInitializationEvent event) {
 		// IMC recipes/communications
-		OreManager.registerMekanismRecipes();
 
 		// Summary information
 		OreManager.getOreItemList().forEach(item -> {
