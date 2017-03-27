@@ -15,9 +15,15 @@ import com.selfeatingwatermelon.mekores.Log;
 import com.selfeatingwatermelon.mekores.MekOres;
 import com.selfeatingwatermelon.mekores.config.Config;
 import com.selfeatingwatermelon.mekores.config.OreStates;
+import com.selfeatingwatermelon.mekores.gas.GasOre;
+import com.selfeatingwatermelon.mekores.integration.Mekanism;
 import com.selfeatingwatermelon.mekores.item.IMetaItem;
 import com.selfeatingwatermelon.mekores.item.ItemOre;
 
+import mekanism.api.gas.Gas;
+import mekanism.api.gas.GasRegistry;
+import mekanism.api.gas.GasStack;
+import mekanism.api.gas.OreGas;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.model.ModelBakery;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
@@ -33,6 +39,7 @@ public class OreManager {
 	
 	private static final ArrayList<ItemOre> oreItemList = new ArrayList<ItemOre>();
 	private static final HashMap<String, ItemStack> oreStackMap = new HashMap<String, ItemStack>();
+	private static final HashMap<String, GasOre> gasMap = new HashMap<String, GasOre>();
 	private static final HashMap<String, ItemStack> oredictCache = new HashMap<String, ItemStack>();
 	
 	public static Collection<String> itentifyPotentialOres()
@@ -61,6 +68,7 @@ public class OreManager {
 		for (Ore ore : Config.getOreList()) {
 			ItemOre item = new ItemOre(ore);
 			try {
+				// Items
 				GameRegistry.register(item);
 				oreItemList.add(item);
 				for(int i = 0; i < item.getVariants(); i++) {
@@ -136,7 +144,7 @@ public class OreManager {
 		return findOreStack(prefix + ore.getOreName(), 1);
 	}
 	
-	public static void registerRecipes() {
+	public static void registerVanillaRecipes() {
 		registerSmeltingRecipes();
 	}
 	
@@ -151,11 +159,102 @@ public class OreManager {
 		});
 	}
 	
+	public static void registerMekanismRecipes() {
+		// Lookup some auxiliary inputs
+		Gas oxygen = GasRegistry.getGas("oxygen");
+		Gas hydrogenChloride = GasRegistry.getGas("hydrogenChloride");
+
+		oreItemList.forEach(item -> {
+			Ore ore = item.getOre();
+
+			for (ItemStack stack : OreDictionary.getOres("ore" + ore.getOreName())) {
+				try {
+					Mekanism.addEnrichmentChamberRecipe(stack, findOreStack("dust", ore, 2));
+				} catch (Exception e) {
+					Log.warn("Could not add Mekanism Enrichment Chamber ore recipe for %s", ore.getOreName());
+				}
+			}
+
+			try {
+				Mekanism.addEnrichmentChamberRecipe(findOreStack("dustDirty", ore), findOreStack("dust", ore));
+			} catch (Exception e) {
+				Log.warn("Could not add Mekanism Enrichment Chamber dirty dust recipe for %s", ore.getOreName());
+			}
+
+			try {
+				Mekanism.addCrusherRecipe(findOreStack("clump", ore), findOreStack("dustDirty", ore));
+			} catch (Exception e) {
+				Log.warn("Could not add Mekanism Crusher clump recipe for %s", ore.getOreName());
+			}
+
+			for (ItemStack stack : OreDictionary.getOres("ore" + ore.getOreName())) {
+				try {
+					Mekanism.addPurificationChamberRecipe(stack, oxygen, findOreStack("clump", ore, 3));
+				} catch (Exception e) {
+					Log.warn("Could not add Mekanism Purification Chamber ore recipe for %s", ore.getOreName());
+				}
+			}
+
+			try {
+				Mekanism.addPurificationChamberRecipe(findOreStack("shard", ore), oxygen, findOreStack("clump", ore));
+			} catch (Exception e) {
+				Log.warn("Could not add Mekanism Purification Chamber shard recipe for %s", ore.getOreName());
+			}
+
+			for (ItemStack stack : OreDictionary.getOres("ore" + ore.getOreName())) {
+				try {
+					Mekanism.addChemicalInjectionChamberRecipe(stack, hydrogenChloride, findOreStack("shard", ore, 4));
+				} catch (Exception e) {
+					Log.warn("Could not add Mekanism Chemical Injection Chamber ore recipe for %s", ore.getOreName());
+				}
+			}
+
+			try {
+				Mekanism.addChemicalInjectionChamberRecipe(findOreStack("crystal", ore), hydrogenChloride, findOreStack("shard", ore));
+			} catch (Exception e) {
+				Log.warn("Could not add Mekanism Chemical Injection Chamber crystal recipe for %s", ore.getOreName());
+			}
+
+			if (Config.registerMekanismGases) {
+				// Clean gas
+				GasOre cleanGas = new GasOre(ore, OreStates.SLURRY_CLEAN);
+				GasRegistry.register(cleanGas);
+				gasMap.put(cleanGas.getName(), cleanGas);
+
+				// Dirty Gas
+				GasOre dirtyGas = new GasOre(ore, OreStates.SLURRY, cleanGas);
+				GasRegistry.register(dirtyGas);
+				gasMap.put(dirtyGas.getName(), dirtyGas);
+
+				for (ItemStack stack : OreDictionary.getOres("ore" + ore.getOreName())) {
+					try {
+						Mekanism.addChemicalDissolutionChamberRecipe(stack, new GasStack(dirtyGas, 1000));
+					} catch (Exception e) {
+						Log.warn("Could not add Mekanism Chemical Dissolution Chamber ore recipe for %s", ore.getOreName());
+					}
+				}
+
+				try {
+					Mekanism.addChemicalWasherRecipe(new GasStack(dirtyGas, 1), new GasStack(cleanGas, 1));
+				} catch (Exception e) {
+					Log.warn("Could not add Mekanism Chemical Washer slurry recipe for %s", ore.getOreName());
+				}
+
+				try {
+					Mekanism.addChemicalCrystallizerRecipe(new GasStack(cleanGas, 200), findOreStack("crystal", ore));
+				} catch (Exception e) {
+					Log.warn("Could not add Mekanism Chemical Crystallizer clean slurry recipe for %s", ore.getOreName());
+				}
+			}
+
+		});
+	}
+
 	public static ImmutableList<ItemOre> getOreItemList() {
 		return ImmutableList.copyOf(oreItemList);
 	}
 	
-	public static ImmutableMap<String, ItemStack> getOreStackMap() {
+	public static ImmutableMap<String, ItemStack> findOreStackMap() {
 		return ImmutableMap.copyOf(oreStackMap);
 	}
 	

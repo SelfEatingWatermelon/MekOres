@@ -22,7 +22,7 @@ public class MekOres {
 	public static final String MODID = "mekores";
 	public static final String NAME = "MekOres";
 	public static final String VERSION = "@VERSION@";
-	public static final String DEPENDENCIES = "required-after:Forge@[12.18.3.2185,);after:*";
+	public static final String DEPENDENCIES = "required-after:Forge@[12.18.3.2185,);required-after:Mekanism@[9.1.0,10.0.0);after:*";
 	public static final String GUIFACTORY = "com.selfeatingwatermelon.mekores.gui.ModGuiFactory";
 	public static final String MCVERSIONS = "[1.10.2]";
 

@@ -14,16 +14,16 @@ public enum OreStates {
 	CLUMP("clump", true, false),
 	SHARD("shard", true, false),
 	CRYSTAL("crystal", true, false),
-	SLURRY_CLEAN("cleanSlurry", true, true),
-	SLURRY("slurry", true, true);
+	SLURRY("dirty", true, true),
+	SLURRY_CLEAN("clean", true, true);
 
 	private String prefix;
 	private boolean register;
 	private boolean gaseous;
 	
-	private OreStates(String oredict, boolean register, boolean gaseous)
+	private OreStates(String prefix, boolean register, boolean gaseous)
 	{
-		this.prefix = oredict;
+		this.prefix = prefix;
 		this.register = register;
 		this.gaseous = gaseous;
 	}

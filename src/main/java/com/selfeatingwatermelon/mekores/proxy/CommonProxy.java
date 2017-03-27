@@ -33,11 +33,12 @@ public class CommonProxy {
 		OreManager.registerOredictEntries();
 		
 		// Register recipes
-		OreManager.registerRecipes();
+		OreManager.registerVanillaRecipes();
 	}
 
 	public void postInit(FMLPostInitializationEvent event) {
-		// IMC communications
+		// IMC recipes/communications
+		OreManager.registerMekanismRecipes();
 
 		// Summary information
 		OreManager.getOreItemList().forEach(item -> {

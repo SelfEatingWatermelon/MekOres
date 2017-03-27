@@ -37,7 +37,7 @@ public class Ore {
 	}
 	
 	public String getOreColorHex() {
-		return "0x" + Integer.toHexString(oreColor.getRGB() & 0xff000000);
+		return "0x" + Integer.toHexString(oreColor.getRGB() & 0x00ffffff);
 	}
 	
 	public int getEnergyCost() {

@@ -10,8 +10,8 @@ item.crystalGeneric.name=%s Crystal
 fluid.moltenGeneric.name=Molten %s
 
 # Gases
-gas.slurryGeneric.name=%s Slurry
-gas.cleanSlurryGeneric.name=Clean %s Slurry
+gas.dirtyGeneric.name=%s Slurry
+gas.cleanGeneric.name=Clean %s Slurry
 
 # Creative Tab
 itemGroup.mekores=Mek Ores

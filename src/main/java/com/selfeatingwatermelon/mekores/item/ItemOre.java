@@ -28,6 +28,10 @@ public class ItemOre extends ItemBase implements IMetaItem, IColoredItem {
 		return ore;
 	}
 	
+	public String getOreName() {
+		return ore.getOreName();
+	}
+
 	public String getOredictPrefixForStack(ItemStack stack) {
 		int meta = stack.getItemDamage(); 
 		return (meta < stateList.size()) ? stateList.get(meta).getOredictPrefix() : "unknown";
@@ -68,7 +72,7 @@ public class ItemOre extends ItemBase implements IMetaItem, IColoredItem {
 	public String getItemStackDisplayName(ItemStack stack) {
 		String unlocalized = getUnlocalizedName(stack);
 		String generic = getGenericUnlocalizedName(stack);
-		return I18n.canTranslate(unlocalized) ? I18n.translateToLocal(unlocalized) : String.format(I18n.translateToLocal(generic), ore.getOreName());
+		return I18n.canTranslate(unlocalized) ? I18n.translateToLocal(unlocalized) : String.format(I18n.translateToLocal(generic), getOreName());
 	}
 
 	@Override
