@@ -11,17 +11,15 @@ public class Ore {
 	private final String oreName;
 	private final String oreKey;
 	private final Color oreColor;
-	private final int energyCost;
 	
-	public Ore (String oreName, Color oreColor, int energyCost) {
+	public Ore (String oreName, Color oreColor) {
 		this.oreName = oreName;
 		this.oreKey = oreName.toLowerCase();
 		this.oreColor = oreColor;
-		this.energyCost = energyCost;
 	}
 	
-	public static Ore createOre(String oreName, Color oreColor, int energyCost) {
-		return new Ore(oreName, oreColor, energyCost);
+	public static Ore createOre(String oreName, Color oreColor) {
+		return new Ore(oreName, oreColor);
 	}
 	
 	public String getOreName() {
@@ -38,10 +36,6 @@ public class Ore {
 	
 	public String getOreColorHex() {
 		return "0x" + Integer.toHexString(oreColor.getRGB() & 0x00ffffff);
-	}
-	
-	public int getEnergyCost() {
-		return energyCost;
 	}
 	
 	@Override

@@ -38,17 +38,15 @@ public class CommonProxy {
 	}
 
 	public void postInit(FMLPostInitializationEvent event) {
-		// IMC recipes/communications
-
 		// Summary information
 		OreManager.getOreItemList().forEach(item -> {
 			Ore ore = item.getOre();
-			Log.info("Added %s (color=%s, energyCost=%d)", ore.getOreName(), ore.getOreColorHex(), ore.getEnergyCost());
+			Log.info("Added %s (color=%s)", ore.getOreName(), ore.getOreColorHex());
 		});
 	}
 	
 	public void serverStart(FMLServerStartingEvent event) {
-		// Register commands/gamerules
+		// Register commands
 	}
 	
 	public void missingMappings(FMLMissingMappingsEvent event) {

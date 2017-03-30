@@ -42,28 +42,6 @@ public class OreManager {
 	private static final HashMap<String, GasOre> gasMap = new HashMap<String, GasOre>();
 	private static final HashMap<String, ItemStack> oredictCache = new HashMap<String, ItemStack>();
 	
-	public static Collection<String> itentifyPotentialOres()
-	{
-		Set<String> ores = new LinkedHashSet<String>();
-		for (String name : OreDictionary.getOreNames())
-		{
-			if (name.startsWith(OreStates.ORE.getOredictPrefix()) && !OreDictionary.getOres(name).isEmpty())
-			{
-				String oreName = name.substring(OreStates.ORE.getOredictPrefix().length());
-				for (String n : OreDictionary.getOreNames())
-				{
-					if (n.equals(OreStates.INGOT.getOredictPrefix() + oreName) && !OreDictionary.getOres(n).isEmpty())
-					{
-						Log.info("Ore Scanner: %s looks interesting...", oreName);
-						ores.add(oreName);
-					}
-				}
-			}
-		}
-
-		return Collections.unmodifiableSet(ores);
-	}
-	
 	public static void createConfiguredItems() {
 		for (Ore ore : Config.getOreList()) {
 			ItemOre item = new ItemOre(ore);
@@ -126,8 +104,8 @@ public class OreManager {
 				}
 			}
 			stack.stackSize = amount;
-		} catch (NullPointerException e) {
-			throw new NullPointerException("Ore dictionary lookup failed: " + oreName);
+		} catch (Exception e) {
+			throw new Exception(oreName + " not found");
 		}
 		return stack;
 	}
@@ -145,16 +123,16 @@ public class OreManager {
 	}
 	
 	public static void registerVanillaRecipes() {
-		registerSmeltingRecipes();
-	}
-	
-	public static void registerSmeltingRecipes() {
 		oreItemList.forEach(item -> {
 			Ore ore = item.getOre();
+
 			try {
+				GameRegistry.addRecipe(findOreStack("ingot", ore), "AAA", "AAA", "AAA", 'A', findOreStack("nugget", ore));
+				GameRegistry.addShapelessRecipe(findOreStack("nugget", ore, 9), findOreStack("ingot", ore));
 				GameRegistry.addSmelting(findOreStack("dust", ore), findOreStack("ingot", ore), 0.2F);
 			} catch (Exception e) {
-				Log.warn("Could not add vanilla dust smelting recipe for %s", ore.getOreName());
+				Log.warn("Could not add Vanilla recipes for %s: %s", ore.getOreName(), e.getMessage());
+				return;
 			}
 		});
 	}
@@ -167,52 +145,55 @@ public class OreManager {
 		oreItemList.forEach(item -> {
 			Ore ore = item.getOre();
 
-			for (ItemStack stack : OreDictionary.getOres("ore" + ore.getOreName())) {
+			// Load the list of compatible ores from the dictionary
+			List<ItemStack> oreDictEntries = OreDictionary.getOres("ore" + ore.getOreName());
+
+			for (ItemStack stack : oreDictEntries) {
 				try {
 					Mekanism.addEnrichmentChamberRecipe(stack, findOreStack("dust", ore, 2));
 				} catch (Exception e) {
-					Log.warn("Could not add Mekanism Enrichment Chamber ore recipe for %s", ore.getOreName());
+					Log.warn("Could not add Mekanism Enrichment Chamber ore recipe for %s: %s", ore.getOreName(), e.getMessage());
 				}
 			}
 
 			try {
 				Mekanism.addEnrichmentChamberRecipe(findOreStack("dustDirty", ore), findOreStack("dust", ore));
 			} catch (Exception e) {
-				Log.warn("Could not add Mekanism Enrichment Chamber dirty dust recipe for %s", ore.getOreName());
+				Log.warn("Could not add Mekanism Enrichment Chamber dirty dust recipe for %s: %s", ore.getOreName(), e.getMessage());
 			}
 
 			try {
 				Mekanism.addCrusherRecipe(findOreStack("clump", ore), findOreStack("dustDirty", ore));
 			} catch (Exception e) {
-				Log.warn("Could not add Mekanism Crusher clump recipe for %s", ore.getOreName());
+				Log.warn("Could not add Mekanism Crusher clump recipe for %s: %s", ore.getOreName(), e.getMessage());
 			}
 
-			for (ItemStack stack : OreDictionary.getOres("ore" + ore.getOreName())) {
+			for (ItemStack stack : oreDictEntries) {
 				try {
 					Mekanism.addPurificationChamberRecipe(stack, oxygen, findOreStack("clump", ore, 3));
 				} catch (Exception e) {
-					Log.warn("Could not add Mekanism Purification Chamber ore recipe for %s", ore.getOreName());
+					Log.warn("Could not add Mekanism Purification Chamber ore recipe for %s: %s", ore.getOreName(), e.getMessage());
 				}
 			}
 
 			try {
 				Mekanism.addPurificationChamberRecipe(findOreStack("shard", ore), oxygen, findOreStack("clump", ore));
 			} catch (Exception e) {
-				Log.warn("Could not add Mekanism Purification Chamber shard recipe for %s", ore.getOreName());
+				Log.warn("Could not add Mekanism Purification Chamber shard recipe for %s: %s", ore.getOreName(), e.getMessage());
 			}
 
-			for (ItemStack stack : OreDictionary.getOres("ore" + ore.getOreName())) {
+			for (ItemStack stack : oreDictEntries) {
 				try {
 					Mekanism.addChemicalInjectionChamberRecipe(stack, hydrogenChloride, findOreStack("shard", ore, 4));
 				} catch (Exception e) {
-					Log.warn("Could not add Mekanism Chemical Injection Chamber ore recipe for %s", ore.getOreName());
+					Log.warn("Could not add Mekanism Chemical Injection Chamber ore recipe for %s: %s", ore.getOreName(), e.getMessage());
 				}
 			}
 
 			try {
 				Mekanism.addChemicalInjectionChamberRecipe(findOreStack("crystal", ore), hydrogenChloride, findOreStack("shard", ore));
 			} catch (Exception e) {
-				Log.warn("Could not add Mekanism Chemical Injection Chamber crystal recipe for %s", ore.getOreName());
+				Log.warn("Could not add Mekanism Chemical Injection Chamber crystal recipe for %s: %s", ore.getOreName(), e.getMessage());
 			}
 
 			if (Config.registerMekanismGases) {
@@ -226,24 +207,16 @@ public class OreManager {
 				GasRegistry.register(dirtyGas);
 				gasMap.put(dirtyGas.getName(), dirtyGas);
 
-				for (ItemStack stack : OreDictionary.getOres("ore" + ore.getOreName())) {
-					try {
-						Mekanism.addChemicalDissolutionChamberRecipe(stack, new GasStack(dirtyGas, 1000));
-					} catch (Exception e) {
-						Log.warn("Could not add Mekanism Chemical Dissolution Chamber ore recipe for %s", ore.getOreName());
-					}
+				for (ItemStack stack : oreDictEntries) {
+					Mekanism.addChemicalDissolutionChamberRecipe(stack, new GasStack(dirtyGas, 1000));
 				}
 
-				try {
-					Mekanism.addChemicalWasherRecipe(new GasStack(dirtyGas, 1), new GasStack(cleanGas, 1));
-				} catch (Exception e) {
-					Log.warn("Could not add Mekanism Chemical Washer slurry recipe for %s", ore.getOreName());
-				}
+				Mekanism.addChemicalWasherRecipe(new GasStack(dirtyGas, 1), new GasStack(cleanGas, 1));
 
 				try {
 					Mekanism.addChemicalCrystallizerRecipe(new GasStack(cleanGas, 200), findOreStack("crystal", ore));
 				} catch (Exception e) {
-					Log.warn("Could not add Mekanism Chemical Crystallizer clean slurry recipe for %s", ore.getOreName());
+					Log.warn("Could not add Mekanism Chemical Crystallizer clean slurry recipe for %s: %s", ore.getOreName(), e.getMessage());
 				}
 			}
 

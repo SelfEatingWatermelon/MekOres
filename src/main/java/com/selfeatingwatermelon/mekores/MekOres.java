@@ -34,10 +34,6 @@ public class MekOres {
 	@Instance(MODID)
 	public static MekOres instance;
 
-	static {
-		FluidRegistry.enableUniversalBucket();
-	}
-
 	@EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
 		proxy.preInit(event);
