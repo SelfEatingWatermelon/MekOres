@@ -3,6 +3,7 @@ package com.selfeatingwatermelon.mekores.proxy;
 import com.selfeatingwatermelon.mekores.Log;
 import com.selfeatingwatermelon.mekores.MekOres;
 import com.selfeatingwatermelon.mekores.config.Config;
+import com.selfeatingwatermelon.mekores.integration.ModManager;
 import com.selfeatingwatermelon.mekores.ore.Ore;
 import com.selfeatingwatermelon.mekores.ore.OreManager;
 import com.selfeatingwatermelon.mekores.remap.Remapper;
@@ -21,28 +22,34 @@ public class CommonProxy {
 		// Setup logging
 		Log.preInit(event);
 		
+		// Setup mod-specific support
+		ModManager.initializeModSupport();
+
 		// Pre-initialize primary config
 		Config.preInit(event);
+
+		// Pass the event to the mod manager
+		ModManager.preInit(event);
+
+		// Perform alternate oredict mappings
+		OreManager.mapAlternateOreNames();
 
 		// Register items
 		OreManager.createConfiguredItems();
 	}
 
 	public void init(FMLInitializationEvent event) {
-		// Register ore dictionary entries
-		OreManager.registerOredictEntries();
-		
+		// Pass the event to mod manager
+		ModManager.init(event);
+
 		// Register recipes
 		OreManager.registerVanillaRecipes();
 		OreManager.registerMekanismRecipes();
 	}
 
 	public void postInit(FMLPostInitializationEvent event) {
-		// Summary information
-		OreManager.getOreItemList().forEach(item -> {
-			Ore ore = item.getOre();
-			Log.info("Added %s (color=%s)", ore.getOreName(), ore.getOreColorHex());
-		});
+		// Pass the event to mod manager
+		ModManager.postInit(event);
 	}
 	
 	public void serverStart(FMLServerStartingEvent event) {

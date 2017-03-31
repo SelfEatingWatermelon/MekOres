@@ -2,21 +2,30 @@ package com.selfeatingwatermelon.mekores.ore;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.selfeatingwatermelon.mekores.Log;
 import com.selfeatingwatermelon.mekores.MekOres;
 import com.selfeatingwatermelon.mekores.config.Config;
+import com.selfeatingwatermelon.mekores.config.DefaultOres;
 import com.selfeatingwatermelon.mekores.config.OreStates;
 import com.selfeatingwatermelon.mekores.gas.GasOre;
 import com.selfeatingwatermelon.mekores.integration.Mekanism;
+import com.selfeatingwatermelon.mekores.integration.ModManager;
 import com.selfeatingwatermelon.mekores.item.IMetaItem;
 import com.selfeatingwatermelon.mekores.item.ItemOre;
 
@@ -42,8 +51,34 @@ public class OreManager {
 	private static final HashMap<String, GasOre> gasMap = new HashMap<String, GasOre>();
 	private static final HashMap<String, ItemStack> oredictCache = new HashMap<String, ItemStack>();
 	
+	private static final String orePrefix = "ore";
+	private static final String ingotPrefix = "ingot";
+	private static final EnumSet<OreStates> mapAlternateStates = EnumSet.of(OreStates.ORE, OreStates.INGOT, OreStates.NUGGET, OreStates.DUST);
+
+	public static void mapAlternateOreNames() {
+		Map<DefaultOres,Set<OreStates>> availableOres = ModManager.getOreMap();
+
+		for (DefaultOres defOre : availableOres.keySet()) {
+			for (OreStates oreState : mapAlternateStates) {
+				List<ItemStack> myEntries = OreDictionary.getOres(oreState.getOredictPrefix() + defOre.name());
+				for (String altName : defOre.getAltOreNames()) {
+
+					// Register my entries under the alternate name
+					for (ItemStack stack : myEntries) {
+						OreDictionary.registerOre(oreState.getOredictPrefix() + altName, stack);
+					}
+
+					// Register alternate entries under my name
+					for (ItemStack stack : OreDictionary.getOres(oreState.getOredictPrefix() + altName)) {
+						OreDictionary.registerOre(oreState.getOredictPrefix() + defOre.name(), stack);
+					}
+				}
+			}
+		}
+	}
+
 	public static void createConfiguredItems() {
-		for (Ore ore : Config.getOreList()) {
+		for (Ore ore : Config.getOreMap().values()) {
 			ItemOre item = new ItemOre(ore);
 			try {
 				// Items
@@ -51,8 +86,9 @@ public class OreManager {
 				oreItemList.add(item);
 				for(int i = 0; i < item.getVariants(); i++) {
 					ItemStack stack = new ItemStack(item, 1, i);
-					String oredictName = item.getOredictNameForStack(stack);
-					oreStackMap.put(oredictName, stack);
+					String name = item.getOredictNameForStack(stack);
+					oreStackMap.put(name, stack);
+					OreDictionary.registerOre(name, stack);
 				}
 			} catch (Exception e) {
 				Log.error(e, "Could not register item: ", item.getRegistryName());
@@ -79,16 +115,6 @@ public class OreManager {
 				}
 			}
 		}
-	}
-	
-	public static void registerOredictEntries() {
-		oreStackMap.forEach((name, stack) -> {
-			try {
-				OreDictionary.registerOre(name, stack);
-			} catch (Exception e) {
-				Log.error(e, "Could not register ore dictionary mapping: %s => %s", name, stack.getDisplayName());
-			}
-		});
 	}
 	
 	public static ItemStack findOreStack(String oreName, int amount) throws Exception {
@@ -127,8 +153,6 @@ public class OreManager {
 			Ore ore = item.getOre();
 
 			try {
-				GameRegistry.addRecipe(findOreStack("ingot", ore), "AAA", "AAA", "AAA", 'A', findOreStack("nugget", ore));
-				GameRegistry.addShapelessRecipe(findOreStack("nugget", ore, 9), findOreStack("ingot", ore));
 				GameRegistry.addSmelting(findOreStack("dust", ore), findOreStack("ingot", ore), 0.2F);
 			} catch (Exception e) {
 				Log.warn("Could not add Vanilla recipes for %s: %s", ore.getOreName(), e.getMessage());
@@ -220,7 +244,60 @@ public class OreManager {
 				}
 			}
 
+			Log.info("Added processing chain for %s", ore.getOreName());
 		});
+
+		if (Config.registerMekanismNetherRecipes) {
+			Set<String> checkNames = Sets.newHashSet(Config.ignoreMekanismOres);
+			oreItemList.forEach(item -> {
+				checkNames.add(item.getOre().getOreName());
+			});
+
+			checkNames.forEach(oreName -> {
+				// Load the list of compatible ores from the dictionary
+				List<ItemStack> oreDictEntries = OreDictionary.getOres("oreNether" + oreName);
+				if (oreDictEntries.size() == 0) {
+					return;
+				}
+
+				for (ItemStack stack : oreDictEntries) {
+					try {
+						Mekanism.addEnrichmentChamberRecipe(stack, findOreStack("dust" + oreName, 4));
+					} catch (Exception e) {
+						Log.warn("Could not add Mekanism Enrichment Chamber nether ore recipe for %s: %s", oreName, e.getMessage());
+					}
+				}
+
+				for (ItemStack stack : oreDictEntries) {
+					try {
+						Mekanism.addPurificationChamberRecipe(stack, oxygen, findOreStack("clump" + oreName, 6));
+					} catch (Exception e) {
+						Log.warn("Could not add Mekanism Purification Chamber nether ore recipe for %s: %s", oreName, e.getMessage());
+					}
+				}
+
+				for (ItemStack stack : oreDictEntries) {
+					try {
+						Mekanism.addChemicalInjectionChamberRecipe(stack, hydrogenChloride, findOreStack("shard" + oreName, 8));
+					} catch (Exception e) {
+						Log.warn("Could not add Mekanism Chemical Injection Chamber nether ore recipe for %s: %s", oreName, e.getMessage());
+					}
+				}
+
+				if (Config.registerMekanismGases) {
+					// Dirty Gas
+					Gas dirtyGas = GasRegistry.containsGas("dirty" + oreName) ? GasRegistry.getGas("dirty" + oreName) : GasRegistry.getGas(oreName.toLowerCase()); 
+
+					if (dirtyGas != null) {
+						for (ItemStack stack : oreDictEntries) {
+							Mekanism.addChemicalDissolutionChamberRecipe(stack, new GasStack(dirtyGas, 2000));
+						}
+					}
+				}
+
+				Log.info("Added processing chain for Nether %s", oreName);
+			});
+		}
 	}
 
 	public static ImmutableList<ItemOre> getOreItemList() {

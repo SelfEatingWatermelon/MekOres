@@ -8,7 +8,7 @@ import com.google.common.collect.ImmutableList;
 public enum OreStates {
 	ORE("ore", false, false),
 	INGOT("ingot", false, false),
-	NUGGET("nugget", true, false),
+	NUGGET("nugget", false, false),
 	DUST("dust", true, false),
 	DUST_DIRTY("dustDirty", true, false),
 	CLUMP("clump", true, false),
