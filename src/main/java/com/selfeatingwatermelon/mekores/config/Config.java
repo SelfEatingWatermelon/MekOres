@@ -4,17 +4,18 @@ import java.awt.Color;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
-
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.selfeatingwatermelon.mekores.Log;
 import com.selfeatingwatermelon.mekores.MekOres;
-import com.selfeatingwatermelon.mekores.integration.ModSupport;
+import com.selfeatingwatermelon.mekores.integration.ModManager;
 import com.selfeatingwatermelon.mekores.item.ItemOre;
 import com.selfeatingwatermelon.mekores.ore.Ore;
 
@@ -45,10 +46,11 @@ public final class Config {
 	public static final Section sectionIntegration = new Section("Integration", "integration");
 	
 	public static boolean registerMekanismGases = true;
+	public static boolean registerMekanismNetherRecipes = true;
 
-	private static EnumSet<DefaultOres> availableOres = EnumSet.noneOf(DefaultOres.class);
-	private static Set<String> ignoreMekanismOres = Sets.newHashSet("Iron", "Gold", "Osmium", "Copper", "Tin", "Silver", "Lead");
-	private static Set<Ore> oreList = new HashSet<Ore>();
+	public static Set<String> ignoreMekanismOres = Sets.newHashSet("Iron", "Gold", "Osmium", "Copper", "Tin", "Silver", "Lead");
+
+	private static HashMap<String, Ore> oreMap = new HashMap<String, Ore>();
 
 	public static void preInit(FMLPreInitializationEvent event) {
 		MinecraftForge.EVENT_BUS.register(new Config());
@@ -100,16 +102,12 @@ public final class Config {
 	
 	public static void processMainConfig() {
 		registerMekanismGases = configMain.getBoolean("registerMekanismGases", sectionMain.name, registerMekanismGases, "Register Mekanism gases for 5x ore processing");
+		registerMekanismNetherRecipes = configMain.getBoolean("registerMekanismNetherRecipes", sectionMain.name, registerMekanismNetherRecipes, "Register Mekanism recipes for Nether ore processing (additional 2x ore)");
 
-		for (ModSupport mod : ModSupport.values()) {
+		for (ModManager mod : ModManager.values()) {
 			mod.setEnabled(configMain.getBoolean(mod.getModName(), sectionIntegration.name, true, "Enable support for " + mod.getModName()));
 			if (mod.isAvailable()) {
-				ArrayList<String> oreNames = new ArrayList<String>();
-				for (DefaultOres ore : mod.getOreList()) {
-					availableOres.add(ore);
-					oreNames.add(ore.name());
-				}
-				Log.info("%s detected (%s)", mod.getModName(), oreNames.size() > 0 ? StringUtils.join(oreNames, ", ") : "None");
+				Log.info("%s support enabled", mod.getModName());
 			}
 		}
 	}
@@ -136,15 +134,19 @@ public final class Config {
 	private static void processOreConfig() {
 		loadOreDefaults();
 
-		oreList.clear();
+		oreMap.clear();
 
 		// Process built-in ores
-		EnumSet<DefaultOres> enabledOres = EnumSet.noneOf(DefaultOres.class); 
+		Map<DefaultOres,Set<OreStates>> availableOres = ModManager.getOreMap();
 		for (String category : configOres.getCategoryNames()) {
 			configOres.setCategoryRequiresMcRestart(category, true);
 			String oreName = configOres.getString("oreName", category, "", "The proper name of this ore");
 			Color oreColor = Color.decode(configOres.getString("color", category, "0x" + Integer.toHexString(0xa0a0a0), "The color to apply to this ore"));
 			boolean enabled = configOres.getBoolean("enabled", category, true, "Enable support for this ore");
+
+			if (!enabled) {
+				continue;
+			}
 
 			DefaultOres defOre = DefaultOres.getDefaultOre(oreName);
 			if (defOre == null) {
@@ -153,9 +155,8 @@ public final class Config {
 				continue;
 			}
 
-			if (enabled && availableOres.contains(defOre)) {
-				enabledOres.add(defOre);
-				oreList.add(new Ore(oreName, oreColor));
+			if (availableOres.containsKey(defOre)) {
+				oreMap.put(oreName, new Ore(oreName, oreColor));
 			}
 		}
 
@@ -166,6 +167,10 @@ public final class Config {
 			Color oreColor = Color.decode(configUser.getString("color", category, "0x" + Integer.toHexString(0x808080), "The color to apply to this ore"));
 			boolean enabled = configUser.getBoolean("enabled", category, true, "Enable support for this ore");
 
+			if (!enabled) {
+				continue;
+			}
+
 			if (ignoreMekanismOres.contains(oreName)) {
 				Log.warn("%s ore processing is provided by Mekanism, skipping...", oreName);
 				continue;
@@ -173,21 +178,19 @@ public final class Config {
 
 			DefaultOres defOre = DefaultOres.getDefaultOre(oreName);
 			if (defOre != null) {
-				if (availableOres.contains(defOre) && enabledOres.contains(defOre)) {
+				if (oreMap.containsKey(oreName)) {
 					Log.warn("%s is a built-in ore and is enabled, skipping...", oreName);
 					continue;
 				}
 				Log.warn("%s is a built-in ore, consider reporting this so we can add formal mod support", oreName);
 			}
 
-			if (enabled) {
-				oreList.add(new Ore(oreName, oreColor));
-			}
+			oreMap.put(oreName, new Ore(oreName, oreColor));
 		}
 	}
 	
-	public static Set<Ore> getOreList() {
-		return ImmutableSet.copyOf(oreList);
+	public static ImmutableMap<String, Ore> getOreMap() {
+		return ImmutableMap.copyOf(oreMap);
 	}
 	
 	public static class Section {
